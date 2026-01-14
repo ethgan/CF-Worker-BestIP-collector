@@ -1,3 +1,23 @@
+# V2.5 vs V2.7 版本对比
+
+| 项目                        | V2.5 版本                                                                 | V2.7 版本（最新版）                                                                 | 主要变化原因 / 影响                                                                 |
+|-----------------------------|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| **管理员登录系统**          | 有完整登录（密码验证、session、登录模态框）                                       | **完全移除**                                                                        | 简化部署、减少 KV 写操作、降低维护复杂度；大多数个人用户不需要管理员认证            |
+| **API Token 管理**          | 支持生成/自定义/设置过期时间/永不过期、复制带Token链接等功能                      | **完全移除**                                                                        | 同上；如果需要保护，可后期加回简单密钥或 Cloudflare Access                        |
+| **优质IP / 下载链接保护**   | 需要登录或 Token 才能访问 /fast-ips、/ips 等                                       | **全部公开**（任何人可直接访问 /fast-ips.txt 等）                                   | 便于分享和使用；降低用户使用门槛；如需保护可自行加回                               |
+| **测速方式**                | 客户端（浏览器）直接测速（/speedtest 接口，逐个 IP 请求）                         | **服务端统一测速**（/manual-speedtest 接口，由 Worker 处理所有请求）                | 避免浏览器 CORS/超时问题；统一控制测速行为；降低被视为异常流量的风险               |
+| **测速文件大小**            | 1000 bytes（几乎只测延迟）                                                        | 300000 bytes（300KB，能粗略测带宽 ≈ X MB/s）                                        | 带宽评估更有参考价值，但单次流量仍控制在安全范围内                                 |
+| **测速并发 & 间隔**         | BATCH_SIZE=5，批次间隔 500ms                                                      | BATCH_SIZE=2，批次间隔 1500ms                                                       | 更保守，降低 Cloudflare 异常流量检测风险                                           |
+| **定时任务（scheduled）**   | 只更新 IP + 自动测速（上限 200 个）                                               | 更新 IP + 自动测速（默认 25 个，上限 50 个）                                        | 测速数量大幅减少，流量更低；更适合长期稳定运行                                     |
+| **手动“开始测速”按钮**      | 浏览器自己循环请求 /speedtest?ip=xxx                                              | 调用后端 /manual-speedtest，Worker 统一测速                                         | 结果更可靠、进度更可控；测速结果直接写入 KV，前端刷新即可看到                     |
+| **带宽显示**                | 无（只显示延迟 ms）                                                               | 有（≈ X MB/s，小文件估算）                                                          | 测速结果更实用                                                                     |
+| **前端页面复杂度**          | 包含登录弹窗、Token管理区、admin-badge、大量 JS 认证逻辑                          | **大幅简化**（移除所有认证相关 UI 和 JS）                                           | 页面加载更快、代码更短、更易维护                                                   |
+| **单次测速流量估算**        | ≈ 25 KB（极小）                                                                   | ≈ 7.5 MB（25 IP × 300 KB）                                                          | 增加但仍很小；一天 ≈36 MB，月 ≈1.1 GB，免费计划通常安全                            |
+| **Cron 频率建议**           | 任意（你设每5小时）                                                               | 建议每5–8小时；流量可接受                                                          | 每5小时 ≈1.1GB/月，极大概率没事；若担心可调到每8小时或更低                         |
+| **代码体积 & 可维护性**     | 较大（含大量认证逻辑）                                                            | **明显更小、更清晰**                                                                | 更容易调试、修改、长期维护                                                         |
+| **适用场景**                | 需要严格权限控制、多人共享但限制访问                                              | 个人使用、公开分享、追求简单稳定                                                    | V2.7 更适合大多数个人部署场景                                                      |
+
+
 # V2.5版本，添加管理员登录参数，需要到CF worker环境变量里添加 ADMIN_PASSWORD，网页增加Token管理，登陆后可用
 <img width="1339" height="575" alt="图片" src="https://github.com/user-attachments/assets/9edcd160-85ca-4d85-9344-6d3699161300" />
 <img width="1598" height="517" alt="图片" src="https://github.com/user-attachments/assets/e32a4353-6954-40c7-b0d2-01860eace439" />
@@ -9,16 +29,16 @@
 由于GitHub版的被官方以滥用资源为理由封禁了项目，特推出基于Cloudflare worker版的优选IP，更快，更高效，更直观！抛弃github Action~
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=onrDa-iNJeY&pp=0gcJCRUKAYcqIYz" target="_blank">
+  <a href="https://www.youtube.com/@cyndiboy7881" target="_blank">
     <img src="https://img.icons8.com/color/48/000000/youtube-play.png" alt="YouTube" width="40" height="40"/>
   </a>
   &nbsp;&nbsp;
-  <a href="https://github.com/ethgan/CF-Worker-BestIP-collector" target="_blank">
+  <a href="https://github.com/sinian-liu" target="_blank">
     <img src="https://img.icons8.com/ios-glyphs/48/000000/github.png" alt="GitHub" width="40" height="40"/>
   </a>
   &nbsp;&nbsp;
-  <a href="https://t.me/yt_hytj" target="_blank">
-    <img src="https://img.icons8.com/color/48/000000/telegram-app--v1.png" alt="Telegram" width="40" height="40"/>
+  <a href="https://www.1373737.xyz/" target="_blank">
+    <img src="https://img.icons8.com/color/48/000000/telegram-app--v1.png" alt="Website" width="40" height="40"/>
   </a>
 </p>
 
